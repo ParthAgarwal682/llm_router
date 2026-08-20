@@ -1,0 +1,12 @@
+# Evaluation helpers for "catches Y% of errors single-model self-checks miss".
+# Fill after you run planted cases + a single-judge baseline comparison.
+#
+# Method (suggested):
+# 1. Run the 3 bad planted cases through single-judge alone and through full arbitration.
+# 2. Y = (# bad cases where arbitration confirmed issues AND single-judge said AGREE
+#         OR arbitration found more/higher-severity issues) / (# bad cases) * 100
+# 3. Or expand to a larger planted-error set and recompute.
+#
+# Placeholder until you measure:
+error_catch_rate_pct: Y
+notes: "Replace Y after comparing single-judge vs full arbitration on planted bad cases."

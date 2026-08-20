@@ -1,0 +1,7 @@
+{
+  "id": "logically_broken",
+  "title": "Logically broken",
+  "description": "Internal contradiction and non sequitur reasoning.",
+  "prompt": "If all widgets are blue, and this object is a widget, what color is it? Explain your reasoning in two sentences.",
+  "candidate_text": "The object must be red because widgets are never blue. Therefore, since it is a widget, it cannot be a widget at all."
+}

@@ -1,0 +1,7 @@
+{
+  "id": "misses_the_point",
+  "title": "Technically correct but misses the point",
+  "description": "Accurate trivia that ignores the actual ask (tradeoffs + recommendation).",
+  "prompt": "Compare carbon taxes vs cap-and-trade for a developing country with weak institutions, then recommend one policy with two concrete implementation constraints.",
+  "candidate_text": "Carbon dioxide is a greenhouse gas. Many countries discuss climate policy at international conferences. Recycling and planting trees are also environmentally friendly activities that individuals can do at home."
+}

@@ -1,0 +1,15 @@
+.venv
+.git
+.gitignore
+.env
+__pycache__
+*.pyc
+*.db
+*.sqlite3
+*.joblib
+data/batch_*.json
+data/batch_prompts.csv
+data/planted_results
+data/router.db
+.DS_Store
+.cursor

@@ -1,0 +1,31 @@
+prompt,label
+"What is the capital of France?",simple
+"Convert 5 miles to kilometers.",simple
+"Rewrite this in past tense: I walk to school every day.",simple
+"What does HTTP stand for?",simple
+"List three primary colors.",simple
+"Fix the spelling: recieve",simple
+"Translate 'hello' to Spanish.",simple
+"What is 15% of 80?",simple
+"Give a one-sentence definition of photosynthesis.",simple
+"Sort these numbers ascending: 9, 2, 7, 1.",simple
+"Summarize photosynthesis in three bullet points for a middle-school student.",moderate
+"Compare TCP and UDP in a short markdown table with 4 rows.",moderate
+"Explain how a binary search works step by step with a small example array.",moderate
+"Draft a polite email asking to reschedule a meeting to next Tuesday at 3pm.",moderate
+"Outline the pros and cons of remote work for a 500-person company.",moderate
+"Write a Python function that checks if a string is a palindrome and add two tests.",moderate
+"Describe the difference between supervised and unsupervised learning with one example each.",moderate
+"Create a weekly meal plan for a vegetarian athlete with protein targets.",moderate
+"Refactor this idea into clearer acceptance criteria: users should somehow log in easily.",moderate
+"Explain OAuth 2.0 authorization code flow in under 200 words.",moderate
+"Analyze the economic tradeoffs of carbon taxes versus cap-and-trade; recommend a policy for a developing country with weak institutions and cite the key mechanisms.",complex
+"Design a fault-tolerant distributed job queue: compare at-least-once vs exactly-once delivery, detail failure modes, and propose monitoring metrics with alert thresholds.",complex
+"Critique this startup pitch for logical gaps and missing risks, then rewrite a stronger version that addresses each flaw: 'AI will automate all customer support next year with zero humans.'",complex
+"Compare three database sharding strategies for a multi-tenant SaaS with uneven tenant size; recommend one under cost, operational complexity, and hot-spot constraints.",complex
+"Synthesize an argument for and against AGI timelines under 10 years, steelman both sides, then give a calibrated probability with explicit assumptions.",complex
+"Given conflicting stakeholder goals (speed, safety, cost), propose a phased rollout plan for an LLM feature in a bank, including evaluation gates and rollback criteria.",complex
+"Debug this system design: a single Redis cache in front of Postgres is losing data under load — list likely causes ranked by severity and an experiment plan to isolate each.",complex
+"Evaluate whether a RAG chatbot or fine-tuned model is better for internal legal Q&A; require a decision matrix, failure modes, and a 90-day implementation plan.",complex
+"Analyze the ethical and technical constraints of deploying face recognition in public transit; propose a policy with measurable safeguards and audit requirements.",complex
+"Construct a multi-step migration plan from a monolith to services for an e-commerce checkout path, including data consistency strategy, cutover risks, and success metrics.",complex

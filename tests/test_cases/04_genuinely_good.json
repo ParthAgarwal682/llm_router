@@ -1,0 +1,7 @@
+{
+  "id": "genuinely_good",
+  "title": "Genuinely good",
+  "description": "Correct, on-point, complete answer that should score well.",
+  "prompt": "What is the capital of France? Reply in one short sentence.",
+  "candidate_text": "The capital of France is Paris."
+}

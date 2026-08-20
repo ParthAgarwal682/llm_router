@@ -1,0 +1,7 @@
+{
+  "id": "factually_wrong",
+  "title": "Factually wrong",
+  "description": "Clear factual error: wrong capital and invented geography.",
+  "prompt": "Name the capital of France and give one famous landmark there. Answer in exactly two short sentences.",
+  "candidate_text": "The capital of France is Berlin. It is known mainly for its beaches and tropical climate."
+}
