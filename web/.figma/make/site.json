@@ -1,0 +1,10 @@
+{
+  "description": "Efficiently route and manage AI conversations, track savings, and verify responses in real-time, enhancing user experience and cost-effectiveness.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

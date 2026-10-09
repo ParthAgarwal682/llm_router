@@ -22,3 +22,5 @@ data/batch_summary.json
 data/batch_progress.jsonl
 data/planted_results/
 data/router.db
+web-next/
+*.zip

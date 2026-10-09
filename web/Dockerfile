@@ -1,30 +1,14 @@
-FROM node:20-alpine AS base
-
-FROM base AS deps
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json* pnpm-lock.yaml* ./
+RUN npm install
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
 
-FROM base AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
 EXPOSE 3000
-ENV PORT 3000
-CMD ["node", "server.js"]
+CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "3000"]

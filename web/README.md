@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Relay
 
-## Getting Started
+A React, Vite, and Tailwind frontend for the LLM Router & Arbitration API.
 
-First, run the development server:
+## Backend connection
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- The default API URL is `http://localhost:8000`.
+- Set `VITE_API_BASE_URL` in your environment, or change the URL in Workspace settings.
+- Sign in or create an account to use the real backend. Before sign-in, the workspace uses clearly labeled sample conversations, sample savings, and simulated responses. Preview changes are held in memory only.
+- JWT access tokens are held in memory. Refresh cookies are sent with `credentials: 'include'`; eligible 401 responses refresh and retry once.
+
+### CORS and cookies
+
+The backend's default allowlist (`localhost:3000`) does not cover the Figma preview. Add the actual frontend origin to the FastAPI CORS allowlist and enable credentials. For an HTTPS preview, use an HTTPS-reachable backend, rather than an HTTP localhost service. Cross-site refresh cookies may require `SameSite=None; Secure`, and browser third-party cookie restrictions still apply. A same-site deployment or reverse proxy is preferable.
+
+## Features
+
+- Auto-routing chat with POST SSE streaming, cancellation, Markdown, tables, and code blocks.
+- Background request verification, tier/model metadata, and per-answer savings.
+- Conversation create, search, rename, delete, and correctly unpacked request history.
+- `/usage` dashboard with range selection, cost comparison, model distribution, and JSON export.
+- Responsive, collapsible sidebar. Enter sends, Shift+Enter adds a line, and Cmd/Ctrl+K searches.
+
+## Checks
+
+```sh
+pnpm exec tsc --noEmit
+pnpm build
+pnpm format src/App.tsx src/lib/api.ts src/lib/demo.ts
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The Figma Make development server is already supervised by the host; do not start a second server.

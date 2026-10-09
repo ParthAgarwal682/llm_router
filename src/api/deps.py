@@ -34,9 +34,12 @@ _bearer = HTTPBearer(auto_error=False)
 
 def _extract_token(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
+    request: Request,
 ) -> str | None:
     if credentials and credentials.scheme.lower() == "bearer":
         return credentials.credentials
+    if "token" in request.query_params:
+        return request.query_params["token"]
     return None
 
 
