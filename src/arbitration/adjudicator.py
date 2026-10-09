@@ -5,28 +5,17 @@ from __future__ import annotations
 from pathlib import Path
 
 import instructor
-import yaml
 from openai import OpenAI
 
 from src.arbitration.schemas import CritiqueReport, Verdict
+from src.config import DEFAULT_ROUTING_PATH, get_adjudicator_model as _get_adjudicator_model
 from src.models.interface import get_openrouter_client
 from src.models.registry import get_model
 
-ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_ROUTING_PATH = ROOT / "config" / "routing.yaml"
-DEFAULT_ADJUDICATOR_MODEL = "gpt4o_mini"  # openai/gpt-4o-mini — verified 2026-07-27
-
 
 def _load_adjudicator_model(routing_path: Path = DEFAULT_ROUTING_PATH) -> str:
-    name = DEFAULT_ADJUDICATOR_MODEL
-    if routing_path.exists():
-        with routing_path.open() as f:
-            data = yaml.safe_load(f) or {}
-        cfg = data.get("arbitration") or {}
-        if cfg.get("adjudicator_model"):
-            name = str(cfg["adjudicator_model"])
-    get_model(name)
-    return name
+    """Return the adjudicator model name from cached config."""
+    return _get_adjudicator_model(routing_path)
 
 
 def adjudicate(
@@ -67,7 +56,7 @@ def adjudicate(
         model=config.model_id,
         response_model=Verdict,
         max_retries=2,
-        max_tokens=900,
+        max_tokens=650,
         messages=[
             {
                 "role": "system",

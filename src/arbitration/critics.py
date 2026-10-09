@@ -5,36 +5,17 @@ from __future__ import annotations
 from pathlib import Path
 
 import instructor
-import yaml
 from openai import OpenAI
 
 from src.arbitration.schemas import CritiqueReport
+from src.config import DEFAULT_ROUTING_PATH, get_critic_models as _get_critic_models
 from src.models.interface import get_openrouter_client
 from src.models.registry import get_model
 
-ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_ROUTING_PATH = ROOT / "config" / "routing.yaml"
-
-# Defaults: three different OpenRouter-backed models (verified 2026-07-27).
-DEFAULT_CRITIC_MODELS = {
-    "accuracy": "gpt4o_mini",  # openai/gpt-4o-mini
-    "logic": "claude_haiku",  # anthropic/claude-3-haiku
-    "completeness": "llama_70b",  # meta-llama/llama-3.3-70b-instruct
-}
-
 
 def _load_critic_models(routing_path: Path = DEFAULT_ROUTING_PATH) -> dict[str, str]:
-    models = dict(DEFAULT_CRITIC_MODELS)
-    if routing_path.exists():
-        with routing_path.open() as f:
-            data = yaml.safe_load(f) or {}
-        cfg = (data.get("arbitration") or {}).get("critics") or {}
-        for dim in models:
-            if cfg.get(dim):
-                models[dim] = str(cfg[dim])
-    for name in models.values():
-        get_model(name)
-    return models
+    """Return {dimension: model_name} from cached config."""
+    return _get_critic_models(routing_path)
 
 
 def _instructor_client() -> instructor.Instructor:
@@ -62,7 +43,7 @@ def _run_critic(
         model=config.model_id,
         response_model=CritiqueReport,
         max_retries=2,
-        max_tokens=700,
+        max_tokens=512,
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user_msg},

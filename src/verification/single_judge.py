@@ -7,13 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-import yaml
-
+from src.config import DEFAULT_ROUTING_PATH, get_verification_models as _get_verification_models
 from src.models.interface import LLMResponse, send_request
-from src.models.registry import get_model
-
-ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_ROUTING_PATH = ROOT / "config" / "routing.yaml"
 
 Verdict = Literal["AGREE", "DISAGREE"]
 
@@ -55,18 +50,8 @@ class VerificationResult:
 def _load_verification_models(
     routing_path: Path = DEFAULT_ROUTING_PATH,
 ) -> tuple[str, str]:
-    strong = DEFAULT_STRONG_MODEL
-    judge = DEFAULT_JUDGE_MODEL
-    if routing_path.exists():
-        with routing_path.open() as f:
-            data = yaml.safe_load(f) or {}
-        cfg = data.get("verification") or {}
-        strong = str(cfg.get("strong_model", strong))
-        judge = str(cfg.get("judge_model", judge))
-    # Fail fast if names are wrong
-    get_model(strong)
-    get_model(judge)
-    return strong, judge
+    """Return (strong_model_name, judge_model_name) from cached config."""
+    return _get_verification_models(routing_path)
 
 
 def _parse_verdict(text: str) -> tuple[Verdict, str]:

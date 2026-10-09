@@ -9,11 +9,15 @@ tiers:
   complex: llama_70b
 
 # Phase 3 — cheap single-judge verifier
+# CHANGED: strong_model is now gpt4o (was gpt4o_mini, which made verification useless).
+# Cost impact: verification cost increases ~10-20x for escalated requests.
+#   Typical increase per escalated request: +$0.001–$0.003 (vs $0.0001–0.0003 before).
+#   This reduces the net_saved number per request but makes it accurate and honest.
 # Registry names; OpenRouter IDs verified 2026-07-27:
 #   gpt4o      → openai/gpt-4o
 #   gpt4o_mini → openai/gpt-4o-mini
 verification:
-  strong_model: gpt4o_mini
+  strong_model: gpt4o
   judge_model: gpt4o_mini
 
 # Phase 4 — multi-critic arbitration (different models per critic)

@@ -72,3 +72,25 @@ def get_model(name: str) -> ModelConfig:
 
 def list_models() -> list[ModelConfig]:
     return list(MODEL_REGISTRY.values())
+
+
+# Default baseline model used for counterfactual cost comparisons.
+# "What would this have cost if we'd always used the top model?"
+_BASELINE_MODEL = "gpt4o"
+
+
+def baseline_cost(
+    input_tokens: int,
+    output_tokens: int,
+    *,
+    baseline_model: str = _BASELINE_MODEL,
+) -> float:
+    """Return the USD cost of processing these tokens on the baseline model.
+
+    This is the canonical implementation; used in both the API and benchmark
+    scripts to avoid duplicated calculation logic.
+    """
+    cfg = get_model(baseline_model)
+    return (input_tokens / 1000.0) * cfg.cost_per_1k_input + (
+        output_tokens / 1000.0
+    ) * cfg.cost_per_1k_output

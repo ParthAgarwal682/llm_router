@@ -1,152 +1,242 @@
-# Smart Router + Multi-Critic Arbitration Pipeline
+# LLM Router Arbitration Platform
 
-**X% cost reduction** vs always routing to the top model · **catches Y% of errors** that single-model self-checks miss
+> **Intelligent LLM routing with automated arbitration and real-time dollar savings tracking vs. GPT-4o.**
 
-> Fill in **X** and **Y** after you run the Phase 6 batch + planted-case evaluation (see below). Until then, leave them as placeholders in your portfolio write-up.
+A production-grade, multi-user ChatGPT/Claude-style web application and API service. Prompts are classified and routed to the cheapest capable model via OpenRouter, verified in the background against strong models, and arbitrated by a 3-critic LangGraph panel when disagreements arise—all while showing each user exactly how much money they save compared to always using GPT-4o.
 
-Routes each LLM request to the cheapest capable model, cheaply self-checks quality, and escalates to a multi-critic jury only when the check smells trouble.
+---
 
-> **Provider:** All LLM calls go through **OpenRouter** (`OPENROUTER_API_KEY`) via `https://openrouter.ai/api/v1`.
+## Key Features
 
-## Status
+- **ChatGPT/Claude-Style Web Workspace (`/web`)**: Modern Next.js (App Router, Tailwind CSS, Lucide icons) interface with sidebar chat management, auto-expanding composer, and real-time SSE token streaming.
+- **Headline Savings Transparency**: 
+  - Every response displays a **Quality Badge** with tier level (`Simple`, `Moderate`, `Complex`), model used, and exact dollar savings vs GPT-4o.
+  - Dedicated **Usage & Savings Analytics** page (`/usage`) detailing lifetime dollar ROI, average savings %, cost comparison charts, and daily financial audit logs.
+- **Multi-Tenant User Authentication & Isolation**:
+  - Secure registration and login (`/v1/auth/register`, `/v1/auth/login`).
+  - Short-lived JWT access tokens + rotating httpOnly refresh cookies (`/v1/auth/refresh`, `/v1/auth/logout`).
+  - Strict user-level data isolation across conversations, prompt messages, and request cost logs.
+  - Per-user sliding-window rate limiting.
+- **Smart 3-Tier Dynamic Routing**:
+  - **Simple** (`llama_8b`): Greetings, basic definitions, trivial lookups (~98% cheaper than GPT-4o).
+  - **Moderate** (`llama_70b`): Structured data tasks, moderate logic, code refactoring.
+  - **Complex** (`claude_sonnet` / `gpt4o`): Deep architectural questions, complex multi-step reasoning.
+- **Verification & Arbitration Engine**:
+  - **Single-Judge Verifier**: Asynchronously compares cheap model output against strong model reference.
+  - **3-Critic LangGraph Arbitration**: Escalates when disagreement occurs, running 3 independent critics (factual accuracy, reasoning soundness, instruction adherence) and a final adjudicator.
+  - Live status updates delivered to the UI via Server-Sent Events (`/v1/requests/{id}/events`).
 
-- [x] Phase 0 — Foundations
-- [x] Phase 1 — Unified model interface
-- [x] Phase 2 — Complexity classifier & routing
-- [x] Phase 3 — Cheap single-judge verifier
-- [x] Phase 4 — Full multi-critic arbitration
-- [x] Phase 5 — Logging, dashboard, API
-- [x] Phase 6 — Portfolio polish
+---
 
-## Setup (local)
+## Architecture Overview
+
+```text
+User Prompt (Next.js Web / API)
+        │
+        ▼
+Complexity Classifier (Feature Extractor + Heuristics)
+        │
+   ┌────┴───────────────────────────┐
+   ▼                                ▼                                ▼
+Simple Tier                   Moderate Tier                   Complex Tier
+(e.g., Llama 3.1 8B)          (e.g., Llama 3.3 70B)          (e.g., Claude 3.5 Sonnet / GPT-4o)
+   │                                │                                │
+   └────────────────────────────────┼────────────────────────────────┘
+                                    ▼
+                         SSE Token Stream to User
+                                    │
+                         (Background Asynchronous)
+                                    ▼
+                         Single-Judge Verifier
+                                    │
+                      ┌─────────────┴─────────────┐
+                   AGREE                       DISAGREE
+                      │                           │
+                      ▼                           ▼
+               Mark Verified             3-Critic LangGraph Jury
+                                         (Fact, Logic, Instruction)
+                                                  │
+                                                  ▼
+                                             Adjudicator
+                                                  │
+                                                  ▼
+                                       Final Verdict & Cost Log
+```
+
+---
+
+## Quickstart (Local Development)
+
+### Prerequisites
+- Python 3.10+ (with virtualenv)
+- Node.js 18+ and npm
+- OpenRouter API key ([https://openrouter.ai/keys](https://openrouter.ai/keys))
+
+### 1. Backend Setup
 
 ```bash
+# Clone and enter repo
+cd llm-router-arbitration
+
+# Create virtual environment & activate
 python3 -m venv .venv
 source .venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
-cp .env.example .env   # paste OPENROUTER_API_KEY from https://openrouter.ai/keys
+
+# Configure environment variables
+cp .env.example .env
+# Edit .env and ensure:
+# OPENROUTER_API_KEY=your_key_here
+# JWT_SECRET=your_random_secret_key_here
+
+# Train routing classifier
 python -m src.routing.train_classifier
+
+# Start FastAPI backend (port 8000)
+uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Always run Python from the repo root so `src.*` imports resolve.
+### 2. Frontend Setup (Next.js)
 
-## Run API + dashboard
+In a new terminal:
 
 ```bash
-# terminal 1
-uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8000
+cd web
 
-# terminal 2
+# Install dependencies
+npm install
+
+# Start Next.js development server (port 3000)
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser:
+- Register an account at `/register`
+- Start chatting in the `/chat` workspace
+- View live savings metrics at `/usage`
+
+### 3. Optional Admin Dashboard (Streamlit)
+
+In a separate terminal:
+
+```bash
+source .venv/bin/activate
 streamlit run src/dashboard/app.py
 ```
+Open [http://localhost:8501](http://localhost:8501) for system-wide cost analytics and verdict explorations.
 
-```bash
-curl -s -X POST http://127.0.0.1:8000/v1/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"prompt":"What is the capital of France?"}' | python -m json.tool
-```
+---
 
-## Phase 6 — portfolio numbers
+## Running with Docker Compose
 
-### 1) Cost-reduction batch (500+ prompts)
-
-Route-only (recommended for the **X%** headline — affordable):
-
-```bash
-python scripts/run_batch_benchmark.py --limit 520
-```
-
-Full pipeline on a smaller sample (route + verify + maybe arbitrate — costly):
-
-```bash
-python scripts/run_batch_benchmark.py --limit 50 --full
-```
-
-**Where to find numbers**
-
-| Artifact | Path |
-|----------|------|
-| Headline summary | `data/batch_summary.json` → `cost_reduction_pct`, `cost_saved_usd`, `total_cost_usd`, `total_baseline_cost_usd` |
-| Per-prompt rows | `data/batch_results.json` |
-| Prompt list | `data/batch_prompts.csv` |
-| Live SQLite / dashboard | `data/router.db` · Streamlit **Cost view** · `GET /v1/stats` |
-
-Copy `cost_reduction_pct` into the README hero as **X**.
-
-### 2) Planted arbitration cases (screenshots)
-
-Four cases live in `tests/test_cases/`:
-
-1. `01_factually_wrong.json`
-2. `02_logically_broken.json`
-3. `03_misses_the_point.json`
-4. `04_genuinely_good.json`
-
-```bash
-# local graph (no server required)
-python scripts/run_planted_cases.py
-
-# or via API
-python scripts/run_planted_cases.py --api http://127.0.0.1:8000
-```
-
-Results land in `data/planted_results/*.json` — screenshot those or the dashboard **Verdict explorer**.
-
-For **Y%** (errors single-judge misses that the full jury catches), compare single-judge vs arbitration on the three bad cases and record the method in `data/portfolio_metrics.example.yaml`.
-
-## Docker
-
-Requires a filled-in `.env` with `OPENROUTER_API_KEY` (never commit it).
+To spin up all services (`api`, `web`, and `dashboard`) with a single command:
 
 ```bash
 docker compose up --build
 ```
 
-- API: http://127.0.0.1:8000/health
-- Dashboard: http://127.0.0.1:8501
+- **Next.js Web UI**: [http://localhost:3000](http://localhost:3000)
+- **FastAPI Backend & Swagger**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Streamlit Admin Dashboard**: [http://localhost:8501](http://localhost:8501)
 
-Verify:
+---
+
+## API Endpoints Reference
+
+### Authentication (`/v1/auth/`)
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/v1/auth/register` | None | Register with `{email, password}`. Returns access token + sets refresh cookie. |
+| `POST` | `/v1/auth/login` | None | Login with `{email, password}`. Returns access token + sets refresh cookie. |
+| `POST` | `/v1/auth/refresh` | Cookie | Rotates refresh token and returns new `{access_token}`. |
+| `POST` | `/v1/auth/logout` | Required | Revokes refresh token and clears cookie. |
+| `GET` | `/v1/auth/me` | Required | Current user details, daily limit, and request counter. |
+
+### Chat & Streaming (`/v1/chat/`)
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/v1/chat/stream` | Required | SSE stream delivering `meta` → `token`* → `done` events with live savings math. |
+
+### Conversations (`/v1/conversations/`)
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/v1/conversations` | Required | List user's conversations (paginated). |
+| `POST` | `/v1/conversations` | Required | Create a new conversation. |
+| `PATCH` | `/v1/conversations/{id}` | Required | Rename conversation title. |
+| `DELETE` | `/v1/conversations/{id}` | Required | Delete conversation and associated messages. |
+| `GET` | `/v1/conversations/{id}/messages` | Required | Retrieve all messages for a specific conversation. |
+
+### Requests & Verification Status (`/v1/requests/`)
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/v1/requests/{id}` | Required | Fetch request details and finalized costs (scoped to user). |
+| `GET` | `/v1/requests/{id}/events` | Required | SSE stream emitting status transitions (`verifying` → `arbitrating` → `final`). |
+
+### Analytics & Stats (`/v1/me/`)
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/v1/me/stats?range=7d\|30d\|all` | Required | User savings breakdown, model distribution, and daily financial audit series. |
+
+---
+
+## Cost & Savings Calculation Logic
+
+For every prompt processed:
+1. **Answer Cost (`answer_cost`)**: Exact token cost of the routed model calculated from input/output tokens using OpenRouter pricing registry.
+2. **Baseline Cost (`baseline_cost_usd`)**: What the same prompt and response tokens would have cost on **GPT-4o** ($2.50 / $10.00 per million tokens).
+3. **Verification Cost (`verification_cost`)**: Any tokens consumed by background judges and multi-critic arbitration.
+4. **Net Dollar Saved (`net_saved`)**:
+   $$\text{Net Saved} = \text{Baseline Cost} - (\text{Answer Cost} + \text{Verification Cost})$$
+   *Net savings can be negative in rare cases if an answer is heavily escalated, and is never falsely clamped.*
+
+---
+
+## Testing
+
+Run the full pytest suite (covering auth, user data isolation, savings math pure functions, and rate limiting):
 
 ```bash
-curl -s http://127.0.0.1:8000/health
-curl -s -X POST http://127.0.0.1:8000/v1/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"prompt":"What is 2+2?"}' | python -m json.tool
+source .venv/bin/activate
+python -m pytest tests/ -v
 ```
 
-Both services share `./data` so dashboard rows match API writes.
+All 28 unit and integration tests are verified passing:
+- `tests/test_auth.py`: Registration, login, validation, refresh token rotation, logout.
+- `tests/test_isolation.py`: Cross-user data isolation on conversations, messages, and request logs.
+- `tests/test_costs.py`: Pure savings calculations, edge cases, breakeven, and negative savings handling.
 
-## Architecture (short)
+---
 
-```
-Request → complexity classifier → cheapest capable model → response
-                ↓ (async)
-         cheap single-judge verify
-                ↓ on DISAGREE only
-         3 critics (parallel LangGraph) → adjudicator → verdict
-```
+## Repository Structure
 
-## Repo layout
-
-```
+```text
 llm-router-arbitration/
-├── docker-compose.yml
-├── Dockerfile
-├── README.md
-├── requirements.txt
-├── config/routing.yaml
-├── scripts/
-│   ├── run_batch_benchmark.py
-│   ├── run_planted_cases.py
-│   └── smoke_openrouter.py
+├── docker-compose.yml          # Multi-container orchestration (api, web, dashboard)
+├── Dockerfile                  # Production API container image
+├── requirements.txt            # Python dependencies (FastAPI, LangGraph, Jose, etc.)
+├── config/
+│   └── routing.yaml            # Tier mappings and model definitions
+├── web/                        # Next.js multi-user web application
+│   ├── app/                    # App Router (login, register, chat, usage)
+│   ├── components/             # UI components (Sidebar, MessageBubble, Composer, QualityBadge)
+│   ├── hooks/                  # useAuth, useStream hooks
+│   └── lib/                    # api client and formatters
 ├── src/
-│   ├── models/
-│   ├── routing/
-│   ├── verification/
-│   ├── arbitration/
-│   ├── storage/
-│   ├── api/
-│   └── dashboard/
-├── data/
-└── tests/test_cases/
+│   ├── api/                    # FastAPI routes, auth, deps, SSE streams
+│   ├── models/                 # Model registry & pricing definitions
+│   ├── routing/                # ML complexity classifier & fallback router
+│   ├── verification/           # Single-judge verification pipeline
+│   ├── arbitration/            # LangGraph 3-critic jury & adjudicator
+│   ├── storage/                # SQLite storage & schema migrations
+│   └── dashboard/              # Streamlit admin analytics app
+├── scripts/                    # Batch benchmarks & smoke tests
+└── tests/                      # Automated pytest test suite
 ```
+
+---
+
+## License
+
+MIT

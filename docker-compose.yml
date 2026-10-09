@@ -10,15 +10,28 @@ services:
     environment:
       - PYTHONPATH=/app
     volumes:
-      # Persist SQLite audit log + batch/planted artifacts across restarts
       - ./data:/app/data
       - ./config:/app/config
+      - ./frontend:/app/frontend
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: router-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      api:
+        condition: service_healthy
 
   dashboard:
     build: .

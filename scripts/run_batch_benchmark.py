@@ -24,7 +24,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.arbitration.graph import run_arbitration
-from src.models.registry import get_model
+from src.models.registry import baseline_cost as _baseline_cost
 from src.routing.router import route_and_call
 from src.storage import db
 from src.verification.single_judge import verify_response
@@ -116,12 +116,7 @@ CONTEXTS = [
     "a public transit agency",
 ]
 
-
-def _baseline_cost(input_tokens: int, output_tokens: int) -> float:
-    cfg = get_model(BASELINE_MODEL)
-    return (input_tokens / 1000.0) * cfg.cost_per_1k_input + (
-        output_tokens / 1000.0
-    ) * cfg.cost_per_1k_output
+# _baseline_cost() is now imported from src.models.registry.baseline_cost as _baseline_cost
 
 
 def generate_prompts(n: int = 520, seed: int = 42) -> list[dict[str, str]]:

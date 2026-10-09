@@ -18,6 +18,7 @@ COPY data/labeled_prompts.csv data/labeled_prompts.csv
 COPY src/ src/
 COPY scripts/ scripts/
 COPY tests/ tests/
+COPY frontend/ frontend/
 COPY README.md .
 
 # Train the complexity classifier inside the image (joblib is gitignored locally)
