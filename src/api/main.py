@@ -279,11 +279,22 @@ def health() -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 @app.get("/")
-def serve_frontend():
-    index = FRONTEND_DIR / "index.html"
-    if index.exists():
-        return FileResponse(str(index))
-    return {"message": "Frontend not found. Run the Next.js app at /web instead."}
+def root() -> dict[str, Any]:
+    return {
+        "service": "LLM Router Arbitration Backend Engine",
+        "status": "online",
+        "role": "Headless API Server (Authentication, LLM Routing, LangGraph Arbitration, Savings Math)",
+        "links": {
+            "user_chat_app": "http://localhost:3000",
+            "admin_dashboard": "http://localhost:8501",
+            "swagger_api_docs": "http://localhost:8000/docs",
+            "health_check": "http://localhost:8000/health",
+        },
+        "instructions": {
+            "for_users": "Visit http://localhost:3000 for the user-facing chat application.",
+            "for_admin": "Visit http://localhost:8501 for your owner dashboard showing registered users and total savings.",
+        },
+    }
 
 
 # ---------------------------------------------------------------------------

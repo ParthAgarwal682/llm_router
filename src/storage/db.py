@@ -251,6 +251,47 @@ def count_user_requests_today(user_id: str, db_path: Path = DEFAULT_DB_PATH) -> 
     return int(row["cnt"]) if row else 0
 
 
+def list_users_with_savings(db_path: Path = DEFAULT_DB_PATH) -> list[dict[str, Any]]:
+    """Return all registered users with their request counts and cumulative savings."""
+    init_db(db_path)
+    with connect(db_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT 
+                u.id,
+                u.email,
+                u.created_at,
+                u.daily_request_limit,
+                COUNT(r.id) AS total_requests,
+                COALESCE(SUM(r.cost_usd), 0) AS actual_cost_usd,
+                COALESCE(SUM(r.baseline_cost_usd), 0) AS baseline_cost_usd,
+                COALESCE(SUM(r.net_saved), 0) AS net_saved_usd
+            FROM users u
+            LEFT JOIN requests r ON r.user_id = u.id
+            GROUP BY u.id
+            ORDER BY net_saved_usd DESC
+            """
+        ).fetchall()
+        return [
+            {
+                "id": r["id"],
+                "email": r["email"],
+                "created_at": r["created_at"],
+                "daily_request_limit": r["daily_request_limit"],
+                "total_requests": r["total_requests"],
+                "actual_cost_usd": float(r["actual_cost_usd"]),
+                "baseline_cost_usd": float(r["baseline_cost_usd"]),
+                "net_saved_usd": float(r["net_saved_usd"]),
+                "saved_percent": (
+                    float(r["net_saved_usd"]) / float(r["baseline_cost_usd"]) * 100
+                    if float(r["baseline_cost_usd"]) > 0
+                    else 0.0
+                ),
+            }
+            for r in rows
+        ]
+
+
 # ---------------------------------------------------------------------------
 # Refresh token CRUD
 # ---------------------------------------------------------------------------
