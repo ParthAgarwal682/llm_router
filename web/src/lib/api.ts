@@ -196,6 +196,8 @@ export const api = {
     })
   },
   stats: (range: string) => json<UserStats>(`/v1/me/stats?range=${range}`),
+  adminUsers: () => json<AdminUserSavings[]>("/v1/admin/users-savings"),
+  adminRequests: () => json<AdminRequestLog[]>("/v1/admin/requests"),
   async stream(
     prompt: string,
     conversationId: string | undefined,
@@ -217,6 +219,33 @@ export const api = {
       onEvent,
     )
   },
+}
+
+export interface AdminUserSavings {
+  id: string
+  email: string
+  created_at: string
+  total_requests: number
+  actual_cost_usd: number
+  baseline_cost_usd: number
+  net_saved_usd: number
+  saved_percent: number
+}
+
+export interface AdminRequestLog {
+  id: string
+  created_at: string
+  user_id?: string
+  prompt: string
+  tier: string
+  model_used: string
+  cost_usd: number
+  baseline_cost_usd: number
+  net_saved?: number
+  saved_percent?: number
+  status: string
+  verify_verdict?: string
+  promoted_to_arbitration?: boolean
 }
 export type EventCallback = (
   event: string,

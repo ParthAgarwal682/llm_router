@@ -33,7 +33,7 @@ MODEL_REGISTRY: dict[str, ModelConfig] = {
     ),
     "claude_haiku": ModelConfig(
         name="claude_haiku",
-        model_id="anthropic/claude-3-haiku",
+        model_id="anthropic/claude-haiku-4.5",
         cost_per_1k_input=0.00025,
         cost_per_1k_output=0.00125,
         quality_tier=1,

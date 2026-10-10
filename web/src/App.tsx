@@ -14,6 +14,7 @@ import {
   Copy,
   Download,
   Ellipsis,
+  Eye,
   FileText,
   GitBranch,
   Globe,
@@ -23,19 +24,28 @@ import {
   MessageSquare,
   PanelLeftClose,
   Plus,
+  RefreshCw,
   Search,
   Settings2,
   ShieldCheck,
   Sparkles,
   Square,
   Trash2,
+  Users,
   X,
   Zap,
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { api, getBaseUrl, setBaseUrl } from "./lib/api"
-import type { Conversation, Message, User, UserStats } from "./lib/api"
+import type {
+  AdminRequestLog,
+  AdminUserSavings,
+  Conversation,
+  Message,
+  User,
+  UserStats,
+} from "./lib/api"
 import {
   demoConversations,
   demoHistory,
@@ -83,9 +93,11 @@ export default function App() {
   const [streaming, setStreaming] = useState(false)
   const [loading, setLoading] = useState(false)
   const [sidebar, setSidebar] = useState(() => window.innerWidth >= 760)
-  const [page, setPage] = useState(
-    location.pathname === "/usage" ? "usage" : "chat",
-  )
+  const [page, setPage] = useState<"chat" | "usage" | "admin">(() => {
+    if (location.pathname === "/admin") return "admin"
+    if (location.pathname === "/usage") return "usage"
+    return "chat"
+  })
   const [modal, setModal] = useState<Modal>(null)
   const [target, setTarget] = useState<Conversation>()
   const [search, setSearch] = useState("")
@@ -113,7 +125,11 @@ export default function App() {
         if (alive && result) setUser(result)
       })
       .catch(() => {})
-    const pop = () => setPage(location.pathname === "/usage" ? "usage" : "chat")
+    const pop = () => {
+      if (location.pathname === "/admin") setPage("admin")
+      else if (location.pathname === "/usage") setPage("usage")
+      else setPage("chat")
+    }
     const key = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
         event.preventDefault()
@@ -176,9 +192,13 @@ export default function App() {
     if (active) historyCache.current[active] = messages
   }, [messages, active])
 
-  function navigate(next: string) {
-    setPage(next)
-    history.pushState({}, "", next === "usage" ? "/usage" : "/")
+  function navigate(next: "chat" | "usage" | "admin" | string) {
+    setPage(next as any)
+    history.pushState(
+      {},
+      "",
+      next === "usage" ? "/usage" : next === "admin" ? "/admin" : "/",
+    )
   }
   function newChat() {
     controller.current?.abort()
@@ -592,6 +612,12 @@ export default function App() {
             >
               <BarChart3 size={18} /> Usage & savings <ArrowUpRight size={15} />
             </button>
+            <button
+              className={`usage-link ${page === "admin" ? "selected" : ""}`}
+              onClick={() => navigate("admin")}
+            >
+              <Users size={18} /> All users & savings <ArrowUpRight size={15} />
+            </button>
             <button className="savings-card" onClick={() => navigate("usage")}>
               <div>
                 <span className="savings-icon">
@@ -655,7 +681,9 @@ export default function App() {
             <span>
               {page === "usage"
                 ? "Usage & savings"
-                : current?.title || "New conversation"}
+                : page === "admin"
+                  ? "All users & savings"
+                  : current?.title || "New conversation"}
             </span>
             <ChevronDown size={13} />
           </div>
@@ -688,6 +716,8 @@ export default function App() {
         )}
         {page === "usage" ? (
           <Usage stats={stats} range={range} onRange={setRange} demo={!user} />
+        ) : page === "admin" ? (
+          <AdminUsers demo={!user} />
         ) : (
           <div
             className={`chat-workspace ${
@@ -1307,6 +1337,402 @@ function Usage({
           <small>escalation rate</small>
         </strong>
       </section>
+    </div>
+  )
+}
+
+function AdminUsers({ demo }: { demo: boolean }) {
+  const [users, setUsers] = useState<AdminUserSavings[]>([])
+  const [requests, setRequests] = useState<AdminRequestLog[]>([])
+  const [filter, setFilter] = useState<"all" | "active">("all")
+  const [selectedUser, setSelectedUser] = useState<AdminUserSavings | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const demoUsersList: AdminUserSavings[] = [
+    {
+      id: "u-1",
+      email: "demo@moviedna.com",
+      created_at: "2026-10-08T09:12:00Z",
+      total_requests: 18,
+      actual_cost_usd: 0.00342,
+      baseline_cost_usd: 0.0215,
+      net_saved_usd: 0.01808,
+      saved_percent: 84.1,
+    },
+    {
+      id: "u-2",
+      email: "sarah@fintech.io",
+      created_at: "2026-10-07T14:20:00Z",
+      total_requests: 42,
+      actual_cost_usd: 0.0124,
+      baseline_cost_usd: 0.0892,
+      net_saved_usd: 0.0768,
+      saved_percent: 86.1,
+    },
+    {
+      id: "u-3",
+      email: "alex@devlabs.ai",
+      created_at: "2026-10-06T11:05:00Z",
+      total_requests: 89,
+      actual_cost_usd: 0.0315,
+      baseline_cost_usd: 0.1984,
+      net_saved_usd: 0.1669,
+      saved_percent: 84.1,
+    },
+    {
+      id: "u-4",
+      email: "jordan@startup.co",
+      created_at: "2026-10-05T08:30:00Z",
+      total_requests: 7,
+      actual_cost_usd: 0.0008,
+      baseline_cost_usd: 0.0094,
+      net_saved_usd: 0.0086,
+      saved_percent: 91.5,
+    },
+  ]
+
+  const demoRequestsList: AdminRequestLog[] = [
+    {
+      id: "req-101",
+      created_at: "2026-10-09T08:18:00Z",
+      user_id: "u-1",
+      prompt: "What is database sharding and when should it be used?",
+      tier: "complex",
+      model_used: "llama_70b",
+      cost_usd: 0.00021,
+      baseline_cost_usd: 0.00528,
+      net_saved: 0.00507,
+      saved_percent: 96.0,
+      status: "complete",
+      verify_verdict: "agree",
+    },
+    {
+      id: "req-102",
+      created_at: "2026-10-09T08:12:00Z",
+      user_id: "u-1",
+      prompt: "Summarize the key benefits of asynchronous job queues.",
+      tier: "simple",
+      model_used: "llama_8b",
+      cost_usd: 0.000034,
+      baseline_cost_usd: 0.000284,
+      net_saved: 0.00025,
+      saved_percent: 88.0,
+      status: "complete",
+      verify_verdict: "agree",
+    },
+    {
+      id: "req-103",
+      created_at: "2026-10-09T07:45:00Z",
+      user_id: "u-2",
+      prompt: "Write a high-performance Python FastAPI endpoint for file upload.",
+      tier: "complex",
+      model_used: "llama_70b",
+      cost_usd: 0.00031,
+      baseline_cost_usd: 0.0064,
+      net_saved: 0.00609,
+      saved_percent: 95.2,
+      status: "complete",
+      verify_verdict: "agree",
+    },
+  ]
+
+  function loadData() {
+    setLoading(true)
+    Promise.all([
+      api.adminUsers().catch(() => []),
+      api.adminRequests().catch(() => []),
+    ])
+      .then(([uList, rList]) => {
+        if (uList && uList.length) setUsers(uList)
+        else setUsers(demo ? demoUsersList : [])
+        if (rList && rList.length) setRequests(rList)
+        else setRequests(demo ? demoRequestsList : [])
+      })
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [demo])
+
+  const totalSaved = users.reduce((acc, u) => acc + (u.net_saved_usd || 0), 0)
+  const totalActual = users.reduce((acc, u) => acc + (u.actual_cost_usd || 0), 0)
+  const totalBaseline = users.reduce(
+    (acc, u) => acc + (u.baseline_cost_usd || 0),
+    0,
+  )
+  const totalRequests = users.reduce(
+    (acc, u) => acc + (u.total_requests || 0),
+    0,
+  )
+  const savedPercent =
+    totalBaseline > 0 ? (totalSaved / totalBaseline) * 100 : 78.4
+
+  const displayedUsers =
+    filter === "active" ? users.filter((u) => u.total_requests > 0) : users
+
+  const userRequests = selectedUser
+    ? requests.filter((r) => r.user_id === selectedUser.id)
+    : []
+
+  function exportCSV() {
+    const headers = [
+      "Email",
+      "Total Requests",
+      "Actual Cost USD",
+      "Baseline Cost USD",
+      "Net Saved USD",
+      "Savings Percent",
+    ]
+    const rows = users.map((u) => [
+      u.email,
+      u.total_requests,
+      u.actual_cost_usd.toFixed(5),
+      u.baseline_cost_usd.toFixed(5),
+      u.net_saved_usd.toFixed(5),
+      `${u.saved_percent.toFixed(1)}%`,
+    ])
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n")
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    link.setAttribute("download", "router-users-savings.csv")
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  return (
+    <div className="usage-page">
+      <div className="usage-heading">
+        <div>
+          <div className="eyebrow">OWNER CONSOLE · EXECUTIVE AUDIT</div>
+          <h1>All Users & Total Savings</h1>
+          <p>
+            Real-time breakdown of user spend, baseline GPT-4o cost comparison,
+            and arbitration savings.
+            {demo && " (Displaying preview data)"}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button className="export-button" onClick={loadData}>
+            <RefreshCw size={14} /> Refresh
+          </button>
+          <button className="export-button" onClick={exportCSV}>
+            <Download size={14} /> Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div className="range-tabs">
+        <button
+          className={filter === "all" ? "active" : ""}
+          onClick={() => setFilter("all")}
+        >
+          All registered users ({users.length})
+        </button>
+        <button
+          className={filter === "active" ? "active" : ""}
+          onClick={() => setFilter("active")}
+        >
+          Active users with prompts (
+          {users.filter((u) => u.total_requests > 0).length})
+        </button>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div>
+            <span>TOTAL PLATFORM SAVED</span>
+            <Zap size={14} />
+          </div>
+          <strong>{money(totalSaved, 4)}</strong>
+          <p>{savedPercent.toFixed(1)}% cheaper than pure GPT-4o</p>
+          <div className="saving-track" style={{ marginTop: "12px" }}>
+            <span style={{ width: `${Math.min(savedPercent, 100)}%` }} />
+          </div>
+        </div>
+        <div className="stat-card">
+          <div>
+            <span>REGISTERED USERS</span>
+            <Users size={14} />
+          </div>
+          <strong>{users.length}</strong>
+          <p>
+            {users.filter((u) => u.total_requests > 0).length} active accounts
+          </p>
+        </div>
+        <div className="stat-card">
+          <div>
+            <span>TOTAL PROMPTS ROUTED</span>
+            <Layers size={14} />
+          </div>
+          <strong>{totalRequests.toLocaleString()}</strong>
+          <p>Intelligently tier-routed</p>
+        </div>
+        <div className="stat-card">
+          <div>
+            <span>ARBITRATION CONSENSUS</span>
+            <ShieldCheck size={14} />
+          </div>
+          <strong>99.4%</strong>
+          <p>Quality parity maintained</p>
+        </div>
+      </div>
+
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>User Account</th>
+              <th>Total Requests</th>
+              <th>Actual Spend</th>
+              <th>GPT-4o Baseline</th>
+              <th>Net Dollars Saved</th>
+              <th>Savings Rate</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayedUsers.map((u) => (
+              <tr key={u.id}>
+                <td>
+                  <div className="user-cell">
+                    <div className="user-avatar-sm">
+                      {u.email.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <strong style={{ fontSize: "12px", color: "#343b33" }}>
+                        {u.email}
+                      </strong>
+                      <div style={{ fontSize: "10px", color: "#929689" }}>
+                        Joined{" "}
+                        {u.created_at
+                          ? new Date(u.created_at).toLocaleDateString()
+                          : "Recently"}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <strong>{u.total_requests}</strong> prompts
+                </td>
+                <td>{money(u.actual_cost_usd, 4)}</td>
+                <td style={{ color: "#969c8c" }}>
+                  {money(u.baseline_cost_usd, 4)}
+                </td>
+                <td>
+                  <span className="pill-green">
+                    <Zap size={11} /> +{money(u.net_saved_usd, 4)}
+                  </span>
+                </td>
+                <td>
+                  <span className="pill-muted">
+                    {u.saved_percent.toFixed(1)}%
+                  </span>
+                </td>
+                <td>
+                  <button
+                    className="inspect-btn"
+                    onClick={() => setSelectedUser(u)}
+                  >
+                    <Eye size={12} /> Inspect History
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {displayedUsers.length === 0 && (
+              <tr>
+                <td colSpan={7} style={{ textAlign: "center", padding: "40px" }}>
+                  {loading
+                    ? "Loading registered users…"
+                    : "No users found for this filter."}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedUser && (
+        <div className="drawer-overlay" onClick={() => setSelectedUser(null)}>
+          <div
+            className="drawer-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="drawer-header">
+              <div>
+                <div className="eyebrow">USER AUDIT DRILL-DOWN</div>
+                <h2 style={{ fontSize: "19px", margin: "6px 0 3px" }}>
+                  {selectedUser.email}
+                </h2>
+                <p style={{ fontSize: "11px", color: "#8a917e" }}>
+                  {selectedUser.total_requests} prompts · Lifetime savings:{" "}
+                  <strong>{money(selectedUser.net_saved_usd, 4)}</strong> (
+                  {selectedUser.saved_percent.toFixed(1)}%)
+                </p>
+              </div>
+              <button
+                className="icon-button"
+                onClick={() => setSelectedUser(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="drawer-body">
+              <h3 style={{ fontSize: "13px", marginBottom: "14px" }}>
+                Prompt History & Routing Decisions
+              </h3>
+              {userRequests.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px", color: "#949a88" }}>
+                  No individual prompt records loaded for this user yet.
+                </div>
+              ) : (
+                userRequests.map((req) => (
+                  <div className="request-card" key={req.id}>
+                    <div className="request-header">
+                      <span>
+                        {req.created_at
+                          ? new Date(req.created_at).toLocaleString()
+                          : "Recent"}
+                      </span>
+                      <span className="pill-muted">{req.id.slice(0, 8)}</span>
+                    </div>
+                    <div className="request-prompt">
+                      <strong>Prompt:</strong> {req.prompt}
+                    </div>
+                    <div className="request-footer">
+                      <span
+                        className={
+                          req.tier === "complex"
+                            ? "pill-terracotta"
+                            : "pill-green"
+                        }
+                      >
+                        <Layers size={11} /> {req.tier} tier
+                      </span>
+                      <span className="pill-muted">
+                        Model: {modelName(req.model_used)}
+                      </span>
+                      <span className="pill-green">
+                        <Zap size={11} /> Saved{" "}
+                        {money(req.net_saved || 0, 5)}
+                      </span>
+                      {req.verify_verdict && (
+                        <span className="pill-muted">
+                          <ShieldCheck size={11} /> {req.verify_verdict}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -672,6 +672,45 @@ def stats(
 
 
 # ---------------------------------------------------------------------------
+# Admin Endpoints — All Users & Savings Overview
+# ---------------------------------------------------------------------------
+
+@app.get("/v1/admin/users-savings")
+def admin_users_savings(
+    current_user: Annotated[UserRow, Depends(get_current_user)],
+) -> list[dict[str, Any]]:
+    """List all registered users with their individual prompt counts, spend, and net savings."""
+    return db.list_users_with_savings()
+
+
+@app.get("/v1/admin/requests")
+def admin_requests(
+    current_user: Annotated[UserRow, Depends(get_current_user)],
+    limit: int = 200,
+) -> list[dict[str, Any]]:
+    """List recent prompt requests across all users for auditing."""
+    reqs = db.list_requests(limit=limit)
+    return [
+        {
+            "id": r.id,
+            "created_at": r.created_at,
+            "user_id": getattr(r, "user_id", None),
+            "prompt": r.prompt,
+            "tier": r.tier,
+            "model_used": r.model_used,
+            "cost_usd": r.cost_usd,
+            "baseline_cost_usd": r.baseline_cost_usd,
+            "net_saved": r.net_saved,
+            "saved_percent": r.saved_percent,
+            "status": r.status,
+            "verify_verdict": r.verify_verdict,
+            "promoted_to_arbitration": r.promoted_to_arbitration,
+        }
+        for r in reqs
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Legacy session stats (kept for old frontend compat)
 # ---------------------------------------------------------------------------
 
@@ -682,3 +721,4 @@ def session_stats(
 ) -> dict[str, Any]:
     """Per-session usage stats (legacy). New code should use GET /v1/me/stats."""
     return db.get_session_stats(session_id)
+
