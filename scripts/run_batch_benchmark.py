@@ -375,6 +375,12 @@ def main() -> None:
         help="Skip prompts already in batch_progress.jsonl / SQLite and continue",
     )
     parser.add_argument(
+        "--input-csv",
+        type=str,
+        default=None,
+        help="Path to custom CSV containing prompts (column 'prompt')",
+    )
+    parser.add_argument(
         "--fresh",
         action="store_true",
         help="Delete progress checkpoint and start clean",
@@ -385,9 +391,21 @@ def main() -> None:
         PROGRESS_PATH.unlink()
         print(f"Cleared {PROGRESS_PATH}")
 
-    rows = generate_prompts(args.limit, seed=args.seed)
-    write_prompts_csv(PROMPTS_PATH, rows)
-    print(f"Wrote {len(rows)} prompts → {PROMPTS_PATH}")
+    if args.input_csv:
+        import pandas as pd
+        df = pd.read_csv(args.input_csv)
+        if "prompt" not in df.columns:
+            raise ValueError(f"CSV {args.input_csv} must have a 'prompt' column")
+        rows = [
+            {"prompt": str(p), "expected_tier": "custom"}
+            for p in df["prompt"].dropna().tolist()[:args.limit]
+        ]
+        print(f"Loaded {len(rows)} prompts from custom file: {args.input_csv}")
+    else:
+        rows = generate_prompts(args.limit, seed=args.seed)
+        write_prompts_csv(PROMPTS_PATH, rows)
+        print(f"Wrote {len(rows)} prompts → {PROMPTS_PATH}")
+
     if args.prompts_only:
         return
 
